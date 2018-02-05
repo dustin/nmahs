@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module NMA where
 
 import Control.Lens
+import Control.Lens.TH
 import Control.Monad (guard)
 import Data.Semigroup ((<>))
 import Network.Wreq (post, FormParam(..), responseBody, responseStatus, statusCode)
@@ -46,8 +48,10 @@ instance Paramer NMA where
   params n = ["apikey" := x | x <- apiKey n] <> ["developerkey" := developerKey n]
 
 -- Msg, Calls Remaining, Time Left.
-data Response = Response { msg :: T.Text, remaining :: Int, timeLeft :: Int }
+data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
   deriving (Show)
+
+makeLenses ''Response
 
 parseResponse :: BS.ByteString -> Either String Response
 parseResponse b =
@@ -57,12 +61,13 @@ parseResponse b =
 
   where open = const
 
-        attr (Right r) "remaining" x = (\n -> r { remaining = n}) <$> eread x
-        attr (Right r) "resettimer" x = (\n -> r { timeLeft = n}) <$> eread x
-        attr r _ _ = r
+        attr :: Either String Response -> C.ByteString -> C.ByteString -> Either String Response
+        attr r "remaining" = eread r remaining
+        attr r "resettimer" = eread r timeLeft
+        attr r _ = const r
 
-        -- attr helper
-        eread = readEither . C.unpack
+        -- Either String Response -> Simple Lens Response Int -> C.ByteString -> Either String Response
+        eread re f c = re >>= f %%~ (const.readEither.C.unpack) c
 
         end = const
 
