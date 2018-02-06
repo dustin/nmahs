@@ -85,3 +85,10 @@ notify nma not = do
   r <- post "https://www.notifymyandroid.com/publicapi/notify" opts
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
+
+
+verify :: NMA -> IO (Either String Response)
+verify nma = do
+  r <- post "https://www.notifymyandroid.com/publicapi/verify" (params nma)
+  guard $ r ^. responseStatus . statusCode == 200
+  pure $ parseResponse $ L.toStrict $ r ^. responseBody
