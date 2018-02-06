@@ -49,7 +49,7 @@ instance Paramer NMA where
 
 -- Msg, Calls Remaining, Time Left.
 data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
-  deriving (Show)
+  deriving (Show, Eq)
 
 makeLenses ''Response
 

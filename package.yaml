@@ -53,3 +53,8 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - nma
+    - HUnit
+    - tasty
+    - tasty-hunit
+    - tasty-quickcheck
+    - bytestring
