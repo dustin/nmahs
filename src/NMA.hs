@@ -5,6 +5,7 @@ module NMA (PriorityLevel(..)
            , Notification(..)
            , NMA(..)
            , Response(..)
+           , remaining, msg, timeLeft
            , notify
            , verify
            -- for testing
