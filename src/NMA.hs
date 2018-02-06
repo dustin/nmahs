@@ -99,7 +99,7 @@ parseResponse b =
 
         end = const
 
-        txt wr x = smap (\r -> r & msg .~ (r ^. msg <> (T.strip . T.pack . C.unpack) x)) wr
+        txt wr x = smap (msg <>~ (T.strip . T.pack . C.unpack) x) wr
 
         close wr "error" = left wr
         close x _ = x
