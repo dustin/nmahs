@@ -17,7 +17,7 @@ testErrorResponseParsing =
                     "<error code=\"401\">invalid API keys</error>",
                     "</nma>"
                   ] in
-    parseResponse txt @?= Left "invalid API keys - 0s left"
+    parseResponse txt @?= Left (Response "invalid API keys" 0 0)
 
 testErrorResponseParsing2 :: Assertion
 testErrorResponseParsing2 =
@@ -26,7 +26,7 @@ testErrorResponseParsing2 =
                     "<error code=\"402\" resettimer=\"13\">Your IP exceeded the maximum number of API calls per hour allowed.</error>",
                     "</nma>"
                   ] in
-    parseResponse txt @?= Left "Your IP exceeded the maximum number of API calls per hour allowed. - 13s left"
+    parseResponse txt @?= Left (Response "Your IP exceeded the maximum number of API calls per hour allowed." 0 13)
 
 testGoodResponseParsing :: Assertion
 testGoodResponseParsing =

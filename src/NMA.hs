@@ -65,35 +65,49 @@ data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
 
 makeLenses ''Response
 
+-- A couple helpers for symmetrical Eithers.
+
+-- smap is like fmap, but doesn't care whether it's operating on Left or Right
+smap :: (a -> a) -> Either a a -> Either a a
+smap f (Right x) = Right (f x)
+smap f (Left x) = Left (f x)
+
+-- left shifts a Right x to a Left x
+left :: Either a a -> Either a a
+left (Right x) = Left x
+left x = x
+
+
 -- | Parse an XML response from NotifyMyAndroid.
-parseResponse :: BS.ByteString -> Either String Response
+parseResponse :: BS.ByteString -> Either Response Response
 parseResponse b =
   case X.fold open attr end txt close cdata (Right $ Response "" 0 0) b of
-    Left x -> (Left . show) x
+    Left x -> Left (Response ((T.pack . show) x) 0 0)
     Right s -> s
 
   where open = const
 
-        attr :: Either String Response -> C.ByteString -> C.ByteString -> Either String Response
+        attr :: Either Response Response -> C.ByteString -> C.ByteString -> Either Response Response
         attr r "remaining" = eread r remaining
         attr r "resettimer" = eread r timeLeft
         attr r _ = const r
 
-        -- Either String Response -> Simple Lens Response Int -> C.ByteString -> Either String Response
-        eread re f c = re >>= f %%~ (const.readEither.C.unpack) c
+        -- Either Response Response -> Simple Lens Response Int -> C.ByteString -> Either Response Response
+        eread re f c = re >>= f %%~ (const.estr.readEither.C.unpack) c
+          where estr (Left x) = Left (Response (T.pack x) 0 0)
+                estr (Right x) = Right x
 
         end = const
 
-        txt (Right (Response m c t)) x = Right (Response (m <> (T.strip . T.pack . C.unpack) x) c t)
-        txt x _ = x
+        txt wr x = smap (\r -> r & msg .~ (r ^. msg <> (T.strip . T.pack . C.unpack) x)) wr
 
-        close (Right (Response m _ t)) "error" = Left ((T.unpack . T.strip) m <> " - " <> show t <> "s left")
+        close wr "error" = left wr
         close x _ = x
 
         cdata = const
 
 -- | Send a notification.
-notify :: NMA -> Notification -> IO (Either String Response)
+notify :: NMA -> Notification -> IO (Either Response Response)
 notify nma not = do
   let opts = params nma <> params not
   r <- post "https://www.notifymyandroid.com/publicapi/notify" opts
@@ -101,7 +115,7 @@ notify nma not = do
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
 
 -- | Verify credentials.
-verify :: NMA -> IO (Either String Response)
+verify :: NMA -> IO (Either Response Response)
 verify nma = do
   r <- post "https://www.notifymyandroid.com/publicapi/verify" (params nma)
   guard $ r ^. responseStatus . statusCode == 200
