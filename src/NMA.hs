@@ -1,7 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module NMA where
+module NMA (PriorityLevel(..)
+           , Notification(..)
+           , NMA(..)
+           , Response(..)
+           , notify
+           , verify
+           -- for testing
+           , parseResponse
+           ) where
 
 import Control.Lens
 import Control.Lens.TH
