@@ -71,10 +71,10 @@ parseResponse b =
 
         end = const
 
-        txt (Right (Response m c t)) x = Right (Response (m <> (T.pack . C.unpack) x) c t)
+        txt (Right (Response m c t)) x = Right (Response (m <> (T.strip . T.pack . C.unpack) x) c t)
         txt x _ = x
 
-        close (Right (Response m _ t)) "error" = Left (T.unpack m <> " - " <> show t <> "s left")
+        close (Right (Response m _ t)) "error" = Left ((T.unpack . T.strip) m <> " - " <> show t <> "s left")
         close x _ = x
 
         cdata = const
