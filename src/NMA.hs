@@ -23,9 +23,11 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
 import qualified Xeno.SAX as X
 
+-- | Priority levels for a notification.
 data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
   deriving(Enum)
 
+-- | Notification to be delivered to an android device.
 data Notification = Notification {
   application :: T.Text
   , description :: T.Text
@@ -47,6 +49,7 @@ instance Paramer Notification where
      "url" := url n,
      "contentType" := contentType n]
 
+-- | Common NMA client info.
 data NMA = NMA {
   apiKey :: [T.Text]
   , developerKey :: T.Text
@@ -61,6 +64,7 @@ data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
 
 makeLenses ''Response
 
+-- | Parse an XML response from NotifyMyAndroid.
 parseResponse :: BS.ByteString -> Either String Response
 parseResponse b =
   case X.fold open attr end txt close cdata (Right $ Response "" 0 0) b of
@@ -87,6 +91,7 @@ parseResponse b =
 
         cdata = const
 
+-- | Send a notification.
 notify :: NMA -> Notification -> IO (Either String Response)
 notify nma not = do
   let opts = params nma <> params not
@@ -94,7 +99,7 @@ notify nma not = do
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
 
-
+-- | Verify credentials.
 verify :: NMA -> IO (Either String Response)
 verify nma = do
   r <- post "https://www.notifymyandroid.com/publicapi/verify" (params nma)
