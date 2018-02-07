@@ -15,13 +15,12 @@ module NMA (PriorityLevel(..)
 
 import SymEither
 
-import Control.Lens
-import Control.Lens.TH
+import Control.Lens (makeLenses, (<>~), (^.), (%%~))
 import Control.Monad (guard)
 import Data.Monoid (Last, getLast)
 import Generics.Deriving.Base (Generic)
 import Generics.Deriving.Monoid (memptydefault, mappenddefault)
-import Data.Semigroup (Semigroup, (<>))
+import Data.Semigroup ((<>))
 import Network.Wreq (post, FormParam(..), responseBody, responseStatus, statusCode)
 import Text.Read (readEither)
 import qualified Data.ByteString as BS
@@ -111,4 +110,3 @@ notify = transmit "https://www.notifymyandroid.com/publicapi/notify"
 -- | Verify credentials.
 verify :: Notification -> IO (Either Response Response)
 verify = transmit "https://www.notifymyandroid.com/publicapi/verify"
-

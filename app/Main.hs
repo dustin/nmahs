@@ -4,9 +4,10 @@ module Main where
 
 import NMA
 
-import Options.Applicative
+import Options.Applicative (Parser, option, maybeReader, strOption, long, help, fullDesc,
+                            showDefault, value, execParser, info, progDesc, helper, (<**>))
 import Data.Semigroup ((<>))
-import System.Exit (die, exitSuccess)
+import System.Exit (die)
 import qualified Data.Text as T
 
 options :: Parser Notification
@@ -32,3 +33,4 @@ main :: IO ()
 main = go =<< execParser opts
   where opts = info (options <**> helper)
                ( fullDesc <> progDesc "NotifyMyAndroid")
+
