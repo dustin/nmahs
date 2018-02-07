@@ -31,6 +31,7 @@ library:
   - lens
   - xeno
   - bytestring
+  - generic-deriving
 
 executables:
   nma-exe:

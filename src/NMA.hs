@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module NMA (PriorityLevel(..)
@@ -17,6 +18,8 @@ import SymEither
 import Control.Lens
 import Control.Lens.TH
 import Control.Monad (guard)
+import Generics.Deriving.Base (Generic)
+import Generics.Deriving.Monoid (memptydefault, mappenddefault)
 import Data.Semigroup (Semigroup, (<>))
 import Network.Wreq (post, FormParam(..), responseBody, responseStatus, statusCode)
 import Text.Read (readEither)
@@ -48,23 +51,13 @@ data Notification = Notification {
   , _url :: T.Text
   , _contentType :: T.Text
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 makeLenses ''Notification
 
 instance Monoid Notification where
-  mappend a b = a & apiKey <>~ b ^. apiKey
-    & developerKey <>~ b ^. developerKey
-    & application <>~ b ^. application
-    & description <>~ b ^. description
-    & event <>~ b ^. event
-    & priority <>~ b ^. priority
-    & url <>~ b ^. url
-    & contentType <>~ b ^. contentType
-
-  mempty = Notification mempty mempty mempty mempty mempty mempty mempty mempty
-
-instance Semigroup Notification
+  mempty  = memptydefault
+  mappend = mappenddefault
 
 params :: Notification -> [FormParam]
 params n =
