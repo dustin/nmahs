@@ -3,6 +3,7 @@
 
 module NMA (PriorityLevel(..)
            , Notification(..)
+           , apiKey, developerKey, application, description, event, priority, url, contentType
            , Response(..)
            , remaining, msg, timeLeft
            , notify
@@ -31,24 +32,27 @@ data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
 
 -- | Notification to be delivered to an android device.
 data Notification = Notification {
-  apiKey :: [T.Text]
-  , developerKey :: T.Text
-  , application :: T.Text
-  , description :: T.Text
-  , event :: T.Text
-  , priority :: PriorityLevel
-  , url :: T.Text
-  , contentType :: T.Text
+  _apiKey :: [T.Text]
+  , _developerKey :: T.Text
+  , _application :: T.Text
+  , _description :: T.Text
+  , _event :: T.Text
+  , _priority :: PriorityLevel
+  , _url :: T.Text
+  , _contentType :: T.Text
   }
 
+makeLenses ''Notification
+
+params :: Notification -> [FormParam]
 params n =
-  ["application" := application n,
-    "description" := description n,
-    "event" := event n,
-    "priority" := (subtract 2.fromEnum.priority) n,
-    "url" := url n,
-    "contentType" := contentType n,
-    "developerkey" := developerKey n] <> ["apikey" := x | x <- apiKey n]
+  ["application" := n ^. application,
+    "description" := n ^. description,
+    "event" := n ^. event,
+    "priority" := (subtract 2.fromEnum) (n ^. priority),
+    "url" := n ^. url,
+    "contentType" := n ^. contentType,
+    "developerkey" := n ^. developerKey] <> ["apikey" := x | x <- n ^. apiKey]
 
 -- Msg, Calls Remaining, Time Left.
 data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
