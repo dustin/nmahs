@@ -59,8 +59,6 @@ instance (Arbitrary a) => Arbitrary (SymEither a) where
 
 instance EqProp Notification where (=-=) = eq
 
-instance EqProp PriorityLevel where (=-=) = eq
-
 instance Arbitrary PriorityLevel where
   arbitrary = arbitraryBoundedEnum
 
@@ -104,7 +102,6 @@ tests = [
   testCase "success response parsing" testGoodResponseParsing,
   testCase "success response parsing with err" testGoodResponseParsingBadInt,
 
-  testProperties' "PriorityLevel monoid" (unbatch $ monoid (mempty :: PriorityLevel)),
   testProperties' "Notification monoid" (unbatch $ monoid (mempty :: Notification)),
 
   testProperties' "SymEither functor" (unbatch $ functor someSym),

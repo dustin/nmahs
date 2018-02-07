@@ -16,7 +16,7 @@ options = Notification
   <*> strOption (long "app" <> showDefault <> value "haskell" <> help "Application")
   <*> strOption (long "desc" <> value "" <> help "Description")
   <*> strOption (long "event" <> value "" <> help "Event")
-  <*> option auto (long "priority" <> showDefault <> value Moderate <> help "Priority")
+  <*> option (maybeReader $ pure.pure.read) (long "priority" <> help "Priority")
   <*> strOption (long "url" <> value "" <> help "URL")
   <*> strOption (long "contentType" <> value "" <> help "Content Type")
 

@@ -18,6 +18,7 @@ import SymEither
 import Control.Lens
 import Control.Lens.TH
 import Control.Monad (guard)
+import Data.Monoid (Last, getLast)
 import Generics.Deriving.Base (Generic)
 import Generics.Deriving.Monoid (memptydefault, mappenddefault)
 import Data.Semigroup (Semigroup, (<>))
@@ -30,15 +31,8 @@ import qualified Data.Text as T
 import qualified Xeno.SAX as X
 
 -- | Priority levels for a notification.
-data PriorityLevel = Undefined | VeryLow | Moderate | Normal | High | Emergency
+data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
   deriving(Eq, Bounded, Enum, Show, Read)
-
-instance Monoid PriorityLevel where
-  mappend a Undefined = a
-  mappend _ b = b
-  mempty = Undefined
-
-instance Semigroup PriorityLevel
 
 -- | Notification to be delivered to an android device.
 data Notification = Notification {
@@ -47,7 +41,7 @@ data Notification = Notification {
   , _application :: T.Text
   , _description :: T.Text
   , _event :: T.Text
-  , _priority :: PriorityLevel
+  , _priority :: Last PriorityLevel
   , _url :: T.Text
   , _contentType :: T.Text
   }
@@ -68,9 +62,9 @@ params n =
     "contentType" := n ^. contentType,
     "developerkey" := n ^. developerKey]
   <> ["apikey" := x | x <- n ^. apiKey]
-  <> case n ^. priority of
-       Undefined -> []
-       x -> ["priority" := (subtract 3.fromEnum) x]
+  <> case getLast (n ^. priority) of
+       Nothing -> []
+       Just x -> ["priority" := (subtract 2.fromEnum) x]
 
 -- Msg, Calls Remaining, Time Left.
 data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
