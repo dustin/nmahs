@@ -12,6 +12,8 @@ module NMA (PriorityLevel(..)
            , parseResponse
            ) where
 
+import SymEither
+
 import Control.Lens
 import Control.Lens.TH
 import Control.Monad (guard)
@@ -65,41 +67,26 @@ data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
 
 makeLenses ''Response
 
--- A couple helpers for symmetrical Eithers.
-
--- smap is like fmap, but doesn't care whether it's operating on Left or Right
-smap :: (a -> a) -> Either a a -> Either a a
-smap f (Right x) = Right (f x)
-smap f (Left x) = Left (f x)
-
--- left shifts a Right x to a Left x
-left :: Either a a -> Either a a
-left (Right x) = Left x
-left x = x
-
-
 -- | Parse an XML response from NotifyMyAndroid.
 parseResponse :: BS.ByteString -> Either Response Response
 parseResponse b =
-  case X.fold open attr end txt close cdata (Right $ Response "" 0 0) b of
+  case X.fold open attr end txt close cdata (SRight $ Response "" 0 0) b of
     Left x -> Left (Response ((T.pack . show) x) 0 0)
-    Right s -> s
+    Right s -> toEither s
 
   where open = const
 
-        attr :: Either Response Response -> C.ByteString -> C.ByteString -> Either Response Response
+        attr :: SymEither Response -> C.ByteString -> C.ByteString -> SymEither Response
         attr r "remaining" = eread r remaining
         attr r "resettimer" = eread r timeLeft
         attr r _ = const r
 
-        -- Either Response Response -> Simple Lens Response Int -> C.ByteString -> Either Response Response
-        eread re f c = re >>= f %%~ (const.estr.readEither.C.unpack) c
-          where estr (Left x) = Left (Response (T.pack x) 0 0)
-                estr (Right x) = Right x
+        -- eread :: SymEither Response -> Simple Lens Response Int -> C.ByteString -> SymEither Response
+        eread re f c = re >>= f %%~ (const.fromEither 0.readEither.C.unpack) c
 
         end = const
 
-        txt wr x = smap (msg <>~ (T.strip . T.pack . C.unpack) x) wr
+        txt wr x = fmap (msg <>~ (T.strip . T.pack . C.unpack) x) wr
 
         close wr "error" = left wr
         close x _ = x
