@@ -3,7 +3,6 @@
 
 module NMA (PriorityLevel(..)
            , Notification(..)
-           , NMA(..)
            , Response(..)
            , remaining, msg, timeLeft
            , notify
@@ -32,7 +31,9 @@ data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
 
 -- | Notification to be delivered to an android device.
 data Notification = Notification {
-  application :: T.Text
+  apiKey :: [T.Text]
+  , developerKey :: T.Text
+  , application :: T.Text
   , description :: T.Text
   , event :: T.Text
   , priority :: PriorityLevel
@@ -40,21 +41,14 @@ data Notification = Notification {
   , contentType :: T.Text
   }
 
-notifparams n =
+params n =
   ["application" := application n,
     "description" := description n,
     "event" := event n,
     "priority" := (subtract 2.fromEnum.priority) n,
     "url" := url n,
-    "contentType" := contentType n]
-
--- | Common NMA client info.
-data NMA = NMA {
-  apiKey :: [T.Text]
-  , developerKey :: T.Text
-  }
-
-nmaparams n = ["apikey" := x | x <- apiKey n] <> ["developerkey" := developerKey n]
+    "contentType" := contentType n,
+    "developerkey" := developerKey n] <> ["apikey" := x | x <- apiKey n]
 
 -- Msg, Calls Remaining, Time Left.
 data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
@@ -89,16 +83,15 @@ parseResponse b =
         cdata = const
 
 -- | Send a notification.
-notify :: NMA -> Notification -> IO (Either Response Response)
-notify nma not = do
-  let opts = nmaparams nma <> notifparams not
-  r <- post "https://www.notifymyandroid.com/publicapi/notify" opts
+notify :: Notification -> IO (Either Response Response)
+notify note = do
+  r <- post "https://www.notifymyandroid.com/publicapi/notify" (params note)
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
 
 -- | Verify credentials.
-verify :: NMA -> IO (Either Response Response)
-verify nma = do
-  r <- post "https://www.notifymyandroid.com/publicapi/verify" (nmaparams nma)
+verify :: Notification -> IO (Either Response Response)
+verify note = do
+  r <- post "https://www.notifymyandroid.com/publicapi/verify" (params note)
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
