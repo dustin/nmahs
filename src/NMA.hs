@@ -111,16 +111,17 @@ parseResponse b =
 
         cdata = const
 
--- | Send a notification.
-notify :: Notification -> IO (Either Response Response)
-notify note = do
-  r <- post "https://www.notifymyandroid.com/publicapi/notify" (params note)
+transmit :: String -> Notification -> IO (Either Response Response)
+transmit u note = do
+  r <- post u (params note)
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
 
+-- | Send a notification.
+notify :: Notification -> IO (Either Response Response)
+notify = transmit "https://www.notifymyandroid.com/publicapi/notify"
+
 -- | Verify credentials.
 verify :: Notification -> IO (Either Response Response)
-verify note = do
-  r <- post "https://www.notifymyandroid.com/publicapi/verify" (params note)
-  guard $ r ^. responseStatus . statusCode == 200
-  pure $ parseResponse $ L.toStrict $ r ^. responseBody
+verify = transmit "https://www.notifymyandroid.com/publicapi/verify"
+
