@@ -5,7 +5,7 @@ data SymEither a = SLeft a | SRight a
 
 left :: SymEither a -> SymEither a
 left l@(SLeft _) = l
-left (SRight x)  = (SLeft x)
+left (SRight x)  = SLeft x
 
 toEither :: SymEither a -> Either a a
 toEither (SLeft a)  = Left a
