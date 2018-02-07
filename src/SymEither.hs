@@ -1,29 +1,31 @@
+{-# LANGUAGE TupleSections #-}
+
 module SymEither where
 
-data SymEither a = SLeft a | SRight a
+newtype SymEither a = SymEither (Bool, a)
   deriving (Eq, Show)
 
 left :: SymEither a -> SymEither a
-left l@(SLeft _) = l
-left (SRight x)  = SLeft x
+left (SymEither (_, a)) = SymEither (False, a)
 
 toEither :: SymEither a -> Either a a
-toEither (SLeft a)  = Left a
-toEither (SRight a) = Right a
+toEither (SymEither (False, a)) = Left a
+toEither (SymEither (_, a))     = Right a
 
 fromEither :: b -> Either a b -> SymEither b
-fromEither a (Left _) = SLeft a
-fromEither _ (Right x) = SRight x
+fromEither a (Left _) = SymEither (False, a)
+fromEither _ (Right x) = SymEither (True, x)
 
 instance Functor SymEither where
-  fmap f (SLeft a)  = SLeft (f a)
-  fmap f (SRight a) = SRight (f a)
+  fmap f (SymEither x) = (SymEither . fmap f) x
+
+cf :: Bool -> SymEither a -> SymEither a
+cf True = id
+cf False = left
 
 instance Applicative SymEither where
-  pure           = SRight
-  SLeft  f <*> r = (left.fmap f) r
-  SRight f <*> r = fmap f r
+  pure                    = SymEither . (True,)
+  (SymEither (t,f)) <*> r = (cf t.fmap f) r
 
 instance Monad SymEither where
-  SLeft  l >>= k = (left.k) l
-  SRight r >>= k = k r
+  (SymEither (t,l)) >>= k = (cf t.k) l

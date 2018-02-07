@@ -55,7 +55,7 @@ instance Eq a => EqProp (SymEither a) where
   (=-=) = eq
 
 instance (Arbitrary a) => Arbitrary (SymEither a) where
-  arbitrary = oneof [SLeft <$> arbitrary, SRight <$> arbitrary]
+  arbitrary = arbitrary >>= pure.pure
 
 instance EqProp Notification where (=-=) = eq
 
@@ -77,16 +77,16 @@ instance Arbitrary Notification where
               <*> arbitrary
 
 from_either_prop :: (Eq a) => a -> Either a a -> Bool
-from_either_prop n l@(Left _) = fromEither n l == SLeft n
-from_either_prop n r@(Right x) = fromEither n r == SRight x
+from_either_prop n l@(Left _) = fromEither n l == SymEither (False, n)
+from_either_prop n r@(Right x) = fromEither n r == SymEither (True,  x)
 
 to_either_prop :: (Eq a) => SymEither a -> Bool
-to_either_prop l@(SLeft a) = toEither l == Left a
-to_either_prop r@(SRight a) = toEither r == Right a
+to_either_prop l@(SymEither (False,a)) = toEither l == Left a
+to_either_prop r@(SymEither (True, a)) = toEither r == Right a
 
 left_prop :: (Eq a) => SymEither a -> Bool
-left_prop l@(SLeft _) = left l == l
-left_prop r@(SRight a) = left r == SLeft a
+left_prop l@(SymEither (False, _)) = left l == l
+left_prop r@(SymEither (True, a)) = left r == SymEither (False, a)
 
 someSym :: SymEither (Int, Int, Int)
 someSym = undefined
