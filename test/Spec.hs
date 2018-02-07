@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import NMA
+import SymEither
 
 import qualified Data.ByteString.Char8 as C
 import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
+import Test.QuickCheck.Checkers
+import Test.QuickCheck.Classes
+import Test.QuickCheck (Arbitrary, arbitrary)
 
 xpack :: [String] -> C.ByteString
 xpack = C.pack.unlines
@@ -37,11 +41,53 @@ testGoodResponseParsing =
                   ] in
    parseResponse txt @?= Right (Response "" 19 36)
 
+testGoodResponseParsingBadInt :: Assertion
+testGoodResponseParsingBadInt =
+  let txt = xpack [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                    "<nma>",
+                    "<success code=\"200\" remaining=\"nineteen\" resettimer=\"36\" />",
+                    "</nma>"
+                  ] in
+   parseResponse txt @?= Left (Response "" 0 36)
+
+instance Eq a => EqProp (SymEither a) where
+  (=-=) = eq
+
+instance (Arbitrary a) => Arbitrary (SymEither a) where
+  arbitrary = oneof [SLeft <$> arbitrary, SRight <$> arbitrary]
+
+from_either_prop :: (Eq a) => a -> Either a a -> Bool
+from_either_prop n l@(Left _) = fromEither n l == SLeft n
+from_either_prop n r@(Right x) = fromEither n r == SRight x
+
+to_either_prop :: (Eq a) => SymEither a -> Bool
+to_either_prop l@(SLeft a) = toEither l == Left a
+to_either_prop r@(SRight a) = toEither r == Right a
+
+left_prop :: (Eq a) => SymEither a -> Bool
+left_prop l@(SLeft _) = left l == l
+left_prop r@(SRight a) = left r == SLeft a
+
+someSym :: SymEither (Int, Int, Int)
+someSym = undefined
+
+-- TODO:  Fix when tasty-quickcheck 0.9.1 is available
+testProperties :: TestName -> [(String, Property)] -> TestTree
+testProperties name = testGroup name . map (uncurry testProperty)
+
 tests :: [TestTree]
 tests = [
   testCase "error response parsing" testErrorResponseParsing,
   testCase "error response parsing (402)" testErrorResponseParsing2,
-  testCase "success response parsing" testGoodResponseParsing
+  testCase "success response parsing" testGoodResponseParsing,
+  testCase "success response parsing with err" testGoodResponseParsingBadInt,
+
+  testProperties "SymEither functor" (unbatch $ functor someSym),
+  testProperties "SymEither applicative" (unbatch $ applicative someSym),
+  testProperties "SymEither monad" (unbatch $ monad someSym),
+  testProperty "SymEither fromEither" (from_either_prop 0 :: Either Int Int -> Bool),
+  testProperty "SymEither toEither" (to_either_prop :: SymEither Int -> Bool),
+  testProperty "SymEither left" (left_prop :: SymEither Int -> Bool)
   ]
 
 main :: IO ()
