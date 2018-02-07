@@ -40,17 +40,13 @@ data Notification = Notification {
   , contentType :: T.Text
   }
 
-class Paramer a where
-  params :: a -> [FormParam]
-
-instance Paramer Notification where
-  params n =
-    ["application" := application n,
-     "description" := description n,
-     "event" := event n,
-     "priority" := (subtract 2.fromEnum.priority) n,
-     "url" := url n,
-     "contentType" := contentType n]
+notifparams n =
+  ["application" := application n,
+    "description" := description n,
+    "event" := event n,
+    "priority" := (subtract 2.fromEnum.priority) n,
+    "url" := url n,
+    "contentType" := contentType n]
 
 -- | Common NMA client info.
 data NMA = NMA {
@@ -58,8 +54,7 @@ data NMA = NMA {
   , developerKey :: T.Text
   }
 
-instance Paramer NMA where
-  params n = ["apikey" := x | x <- apiKey n] <> ["developerkey" := developerKey n]
+nmaparams n = ["apikey" := x | x <- apiKey n] <> ["developerkey" := developerKey n]
 
 -- Msg, Calls Remaining, Time Left.
 data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
@@ -96,7 +91,7 @@ parseResponse b =
 -- | Send a notification.
 notify :: NMA -> Notification -> IO (Either Response Response)
 notify nma not = do
-  let opts = params nma <> params not
+  let opts = nmaparams nma <> notifparams not
   r <- post "https://www.notifymyandroid.com/publicapi/notify" opts
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
@@ -104,6 +99,6 @@ notify nma not = do
 -- | Verify credentials.
 verify :: NMA -> IO (Either Response Response)
 verify nma = do
-  r <- post "https://www.notifymyandroid.com/publicapi/verify" (params nma)
+  r <- post "https://www.notifymyandroid.com/publicapi/verify" (nmaparams nma)
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
