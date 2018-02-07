@@ -62,7 +62,7 @@ instance Monoid Notification where
     & url <>~ b ^. url
     & contentType <>~ b ^. contentType
 
-  mempty = Notification [] "" "" "" "" Undefined "" ""
+  mempty = Notification mempty mempty mempty mempty mempty mempty mempty mempty
 
 instance Semigroup Notification
 
