@@ -86,7 +86,7 @@ parseResponse b =
 
         end = const
 
-        txt wr x = fmap (msg <>~ (T.strip . T.pack . C.unpack) x) wr
+        txt wr x = (msg <>~ (T.strip . T.pack . C.unpack) x) <$> wr
 
         close wr "error" = left wr
         close x _ = x
