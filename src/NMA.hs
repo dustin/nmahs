@@ -28,7 +28,7 @@ import qualified Xeno.SAX as X
 
 -- | Priority levels for a notification.
 data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
-  deriving(Enum)
+  deriving(Enum, Show, Read)
 
 -- | Notification to be delivered to an android device.
 data Notification = Notification {

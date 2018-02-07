@@ -42,6 +42,8 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - nma
+    - text
+    - optparse-applicative
 
 tests:
   nma-test:
