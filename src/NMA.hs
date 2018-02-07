@@ -70,7 +70,7 @@ makeLenses ''Response
 -- | Parse an XML response from NotifyMyAndroid.
 parseResponse :: BS.ByteString -> Either Response Response
 parseResponse b =
-  case X.fold open attr end txt close cdata (SRight $ Response "" 0 0) b of
+  case X.fold open attr end txt close cdata (pure $ Response "" 0 0) b of
     Left x -> Left (Response ((T.pack . show) x) 0 0)
     Right s -> toEither s
 
