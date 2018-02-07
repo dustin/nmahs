@@ -3,13 +3,14 @@
 import NMA
 import SymEither
 
-import qualified Data.ByteString.Char8 as C
-import Test.Tasty
-import Test.Tasty.QuickCheck as QC
-import Test.Tasty.HUnit
+import Test.QuickCheck (Arbitrary, arbitrary)
 import Test.QuickCheck.Checkers
 import Test.QuickCheck.Classes
-import Test.QuickCheck (Arbitrary, arbitrary)
+import Test.Tasty
+import Test.Tasty.HUnit
+import Test.Tasty.QuickCheck as QC
+import qualified Data.ByteString.Char8 as C
+import qualified Data.Text as T
 
 xpack :: [String] -> C.ByteString
 xpack = C.pack.unlines
@@ -56,6 +57,27 @@ instance Eq a => EqProp (SymEither a) where
 instance (Arbitrary a) => Arbitrary (SymEither a) where
   arbitrary = oneof [SLeft <$> arbitrary, SRight <$> arbitrary]
 
+instance EqProp Notification where (=-=) = eq
+
+instance EqProp PriorityLevel where (=-=) = eq
+
+instance Arbitrary PriorityLevel where
+  arbitrary = arbitraryBoundedEnum
+
+instance Arbitrary T.Text where
+  arbitrary = T.pack <$> arbitrary
+
+instance Arbitrary Notification where
+  arbitrary = Notification
+              <$> arbitrary
+              <*> arbitrary
+              <*> arbitrary
+              <*> arbitrary
+              <*> arbitrary
+              <*> arbitrary
+              <*> arbitrary
+              <*> arbitrary
+
 from_either_prop :: (Eq a) => a -> Either a a -> Bool
 from_either_prop n l@(Left _) = fromEither n l == SLeft n
 from_either_prop n r@(Right x) = fromEither n r == SRight x
@@ -81,6 +103,9 @@ tests = [
   testCase "error response parsing (402)" testErrorResponseParsing2,
   testCase "success response parsing" testGoodResponseParsing,
   testCase "success response parsing with err" testGoodResponseParsingBadInt,
+
+  testProperties' "PriorityLevel monoid" (unbatch $ monoid (mempty :: PriorityLevel)),
+  testProperties' "Notification monoid" (unbatch $ monoid (mempty :: Notification)),
 
   testProperties' "SymEither functor" (unbatch $ functor someSym),
   testProperties' "SymEither applicative" (unbatch $ applicative someSym),

@@ -17,7 +17,7 @@ import SymEither
 import Control.Lens
 import Control.Lens.TH
 import Control.Monad (guard)
-import Data.Semigroup ((<>))
+import Data.Semigroup (Semigroup, (<>))
 import Network.Wreq (post, FormParam(..), responseBody, responseStatus, statusCode)
 import Text.Read (readEither)
 import qualified Data.ByteString as BS
@@ -27,8 +27,15 @@ import qualified Data.Text as T
 import qualified Xeno.SAX as X
 
 -- | Priority levels for a notification.
-data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
-  deriving(Enum, Show, Read)
+data PriorityLevel = Undefined | VeryLow | Moderate | Normal | High | Emergency
+  deriving(Eq, Bounded, Enum, Show, Read)
+
+instance Monoid PriorityLevel where
+  mappend a Undefined = a
+  mappend _ b = b
+  mempty = Undefined
+
+instance Semigroup PriorityLevel
 
 -- | Notification to be delivered to an android device.
 data Notification = Notification {
@@ -41,18 +48,36 @@ data Notification = Notification {
   , _url :: T.Text
   , _contentType :: T.Text
   }
+  deriving (Eq, Show)
 
 makeLenses ''Notification
+
+instance Monoid Notification where
+  mappend a b = a & apiKey <>~ b ^. apiKey
+    & developerKey <>~ b ^. developerKey
+    & application <>~ b ^. application
+    & description <>~ b ^. description
+    & event <>~ b ^. event
+    & priority <>~ b ^. priority
+    & url <>~ b ^. url
+    & contentType <>~ b ^. contentType
+
+  mempty = Notification [] "" "" "" "" Undefined "" ""
+
+instance Semigroup Notification
 
 params :: Notification -> [FormParam]
 params n =
   ["application" := n ^. application,
     "description" := n ^. description,
     "event" := n ^. event,
-    "priority" := (subtract 2.fromEnum) (n ^. priority),
     "url" := n ^. url,
     "contentType" := n ^. contentType,
-    "developerkey" := n ^. developerKey] <> ["apikey" := x | x <- n ^. apiKey]
+    "developerkey" := n ^. developerKey]
+  <> ["apikey" := x | x <- n ^. apiKey]
+  <> case n ^. priority of
+       Undefined -> []
+       x -> ["priority" := (subtract 3.fromEnum) x]
 
 -- Msg, Calls Remaining, Time Left.
 data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
