@@ -22,7 +22,7 @@ testErrorResponseParsing =
                     "<error code=\"401\">invalid API keys</error>",
                     "</nma>"
                   ] in
-    parseResponse txt @?= Left (Response "invalid API keys" 0 0)
+    parseResponse txt @?= Left (Response "invalid API keys" 401 0 0)
 
 testErrorResponseParsing2 :: Assertion
 testErrorResponseParsing2 =
@@ -31,7 +31,7 @@ testErrorResponseParsing2 =
                     "<error code=\"402\" resettimer=\"13\">Your IP exceeded the maximum number of API calls per hour allowed.</error>",
                     "</nma>"
                   ] in
-    parseResponse txt @?= Left (Response "Your IP exceeded the maximum number of API calls per hour allowed." 0 13)
+    parseResponse txt @?= Left (Response "Your IP exceeded the maximum number of API calls per hour allowed." 402 0 13)
 
 testGoodResponseParsing :: Assertion
 testGoodResponseParsing =
@@ -40,7 +40,7 @@ testGoodResponseParsing =
                     "<success code=\"200\" remaining=\"19\" resettimer=\"36\" />",
                     "</nma>"
                   ] in
-   parseResponse txt @?= Right (Response "" 19 36)
+   parseResponse txt @?= Right (Response "" 200 19 36)
 
 testGoodResponseParsingBadInt :: Assertion
 testGoodResponseParsingBadInt =
@@ -49,7 +49,7 @@ testGoodResponseParsingBadInt =
                     "<success code=\"200\" remaining=\"nineteen\" resettimer=\"36\" />",
                     "</nma>"
                   ] in
-   parseResponse txt @?= Left (Response "" 0 36)
+   parseResponse txt @?= Left (Response "" 200 0 36)
 
 instance Eq a => EqProp (SymEither a) where
   (=-=) = eq

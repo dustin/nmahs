@@ -6,7 +6,7 @@ module NMA (PriorityLevel(..)
            , Notification(..)
            , apiKey, developerKey, application, description, event, priority, url, contentType
            , Response(..)
-           , remaining, msg, timeLeft
+           , msg, code, remaining, timeLeft
            , notify
            , verify
            -- for testing
@@ -66,7 +66,7 @@ params n =
        Just x -> ["priority" := (subtract 2.fromEnum) x]
 
 -- Msg, Calls Remaining, Time Left.
-data Response = Response { _msg :: T.Text, _remaining :: Int, _timeLeft :: Int }
+data Response = Response { _msg :: T.Text, _code :: Int, _remaining :: Int, _timeLeft :: Int }
   deriving (Show, Eq)
 
 makeLenses ''Response
@@ -74,8 +74,8 @@ makeLenses ''Response
 -- | Parse an XML response from NotifyMyAndroid.
 parseResponse :: BS.ByteString -> Either Response Response
 parseResponse b =
-  case X.fold open attr end txt close cdata (pure $ Response "" 0 0) b of
-    Left x -> Left (Response ((T.pack . show) x) 0 0)
+  case X.fold open attr end txt close cdata (pure $ Response "" 0 0 0) b of
+    Left x -> Left (Response ((T.pack . show) x) 0 0 0)
     Right s -> toEither s
 
   where open = const
@@ -83,6 +83,7 @@ parseResponse b =
         attr :: SymEither Response -> C.ByteString -> C.ByteString -> SymEither Response
         attr r "remaining" = eread r remaining
         attr r "resettimer" = eread r timeLeft
+        attr r "code" = eread r code
         attr r _ = const r
 
         -- eread :: SymEither Response -> Simple Lens Response Int -> C.ByteString -> SymEither Response
