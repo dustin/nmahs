@@ -1,22 +1,39 @@
+{-|
+Module      : NMA
+Description : An interface to NotifyMyAndroid.
+Copyright   : (c) Dustin Sallings, 2018
+License     : MIT
+Maintainer  : dustin@spy.net
+Stability   : experimental
+
+This is an interface to NotifyMyAndroid - http://notifymyandroid.com/
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module NMA (PriorityLevel(..)
-           , Notification(..)
-           , apiKey, developerKey, application, description, event, priority, url, contentType
-           , Response(..)
-           , msg, code, remaining, timeLeft
-           , notify
-           , verify
-           -- for testing
-           , parseResponse
-           ) where
+module NMA (
+  -- * NotifyMyAndroid API Functions.
+  notify
+  , verify
+  -- * Request Structures
+  , Notification(..)
+  , notification
+  , apiKey, developerKey, application, description, event, priority, url, contentType
+  , PriorityLevel(..)
+  -- * Response
+  , Response(..)
+  , msg, code, remaining, timeLeft
+  -- * for testing
+  , parseResponse
+  ) where
 
 import SymEither
 
 import Control.Lens (makeLenses, (<>~), (^.), (%%~))
 import Control.Monad (guard)
+import Data.Default (Default, def)
 import Data.Monoid (Last, getLast)
 import Data.Semigroup (Semigroup)
 import Generics.Deriving.Base (Generic)
@@ -34,7 +51,24 @@ import qualified Xeno.SAX as X
 data PriorityLevel = VeryLow | Moderate | Normal | High | Emergency
   deriving(Eq, Bounded, Enum, Show, Read)
 
--- | Notification to be delivered to an android device.
+{-|
+Notification to be delivered to an android device.
+
+Notifications are monoids, allowing you to construct them in two
+different parts of your application and combine them naturally.
+
+e.g., you may set up the apiKey(s) and developerKey in initialization,
+and then add notification details as you go.
+
+@
+λ> nma = def & apiKey .~ ["somekey"] & developerKey .~ "devkey" & application .~ "haskell"
+λ> note = def & event .~ "Some Event" & description .~ "things are broken" & priority .~ pure Emergency
+λ> nma <> note
+Notification {_apiKey = ["somekey"], _developerKey = "devkey",
+              _application = "haskell", _description = "things are broken", _event = "Some Event",
+              _priority = Last {getLast = Just Emergency}, _url = "", _contentType = ""}
+@
+-}
 data Notification = Notification {
   _apiKey :: [T.Text]
   , _developerKey :: T.Text
@@ -52,6 +86,15 @@ makeLenses ''Notification
 instance Monoid Notification where
   mempty  = memptydefault
   mappend = mappenddefault
+
+instance Semigroup Notification
+
+instance Default Notification where
+  def = mempty
+
+-- | A default (empty) notification from which you can more easily build your notification.
+notification :: Notification
+notification = mempty
 
 params :: Notification -> [FormParam]
 params n =
@@ -76,8 +119,6 @@ makeLenses ''Response
 parseResponse :: BS.ByteString -> Either Response Response
 parseResponse b =
   case X.fold open attr end txt close cdata (pure $ Response "" 0 0 0) b of
-instance Semigroup Notification
-
     Left x -> Left (Response ((T.pack . show) x) 0 0 0)
     Right s -> toEither s
 
@@ -107,10 +148,21 @@ transmit u note = do
   guard $ r ^. responseStatus . statusCode == 200
   pure $ parseResponse $ L.toStrict $ r ^. responseBody
 
--- | Send a notification.
+{-|
+Send a notification.
+
+e.g.,
+
+> notify $ Notification ["myapikey"] "mydevkey" "ghci" "Hello" "Test" (pure Normal) "" ""
+-}
 notify :: Notification -> IO (Either Response Response)
 notify = transmit "https://www.notifymyandroid.com/publicapi/notify"
 
--- | Verify credentials.
+{-|
+Verify credentials.  Verify uses the same parameter type as notification, but most of
+the fields aren't required.  e.g.:
+
+> verify $ def & apiKey .~ ["myapikey"]
+-}
 verify :: Notification -> IO (Either Response Response)
 verify = transmit "https://www.notifymyandroid.com/publicapi/verify"
