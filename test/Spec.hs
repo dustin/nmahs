@@ -102,7 +102,7 @@ tests = [
   testCase "success response parsing" testGoodResponseParsing,
   testCase "success response parsing with err" testGoodResponseParsingBadInt,
 
-  testProperties' "Notification monoid" (unbatch $ monoid (mempty :: Notification)),
+  testProperties' "Notification monoid" (unbatch $ monoid notification),
 
   testProperties' "SymEither functor" (unbatch $ functor someSym),
   testProperties' "SymEither applicative" (unbatch $ applicative someSym),
