@@ -55,7 +55,7 @@ instance Eq a => EqProp (SymEither a) where
   (=-=) = eq
 
 instance (Arbitrary a) => Arbitrary (SymEither a) where
-  arbitrary = arbitrary >>= pure.pure
+  arbitrary = pure <$> arbitrary
 
 instance EqProp Notification where (=-=) = eq
 
@@ -76,17 +76,17 @@ instance Arbitrary Notification where
               <*> arbitrary
               <*> arbitrary
 
-from_either_prop :: (Eq a) => a -> Either a a -> Bool
-from_either_prop n l@(Left _) = fromEither n l == SymEither (False, n)
-from_either_prop n r@(Right x) = fromEither n r == SymEither (True,  x)
+fromEitherProp :: (Eq a) => a -> Either a a -> Bool
+fromEitherProp n l@(Left _) = fromEither n l == SymEither (False, n)
+fromEitherProp n r@(Right x) = fromEither n r == SymEither (True,  x)
 
-to_either_prop :: (Eq a) => SymEither a -> Bool
-to_either_prop l@(SymEither (False,a)) = toEither l == Left a
-to_either_prop r@(SymEither (True, a)) = toEither r == Right a
+toEitherProp :: (Eq a) => SymEither a -> Bool
+toEitherProp l@(SymEither (False,a)) = toEither l == Left a
+toEitherProp r@(SymEither (True, a)) = toEither r == Right a
 
-left_prop :: (Eq a) => SymEither a -> Bool
-left_prop l@(SymEither (False, _)) = left l == l
-left_prop r@(SymEither (True, a)) = left r == SymEither (False, a)
+leftProp :: (Eq a) => SymEither a -> Bool
+leftProp l@(SymEither (False, _)) = left l == l
+leftProp r@(SymEither (True, a)) = left r == SymEither (False, a)
 
 someSym :: SymEither (Int, Int, Int)
 someSym = undefined
@@ -107,9 +107,9 @@ tests = [
   testProperties' "SymEither functor" (unbatch $ functor someSym),
   testProperties' "SymEither applicative" (unbatch $ applicative someSym),
   testProperties' "SymEither monad" (unbatch $ monad someSym),
-  testProperty "SymEither fromEither" (from_either_prop 0 :: Either Int Int -> Bool),
-  testProperty "SymEither toEither" (to_either_prop :: SymEither Int -> Bool),
-  testProperty "SymEither left" (left_prop :: SymEither Int -> Bool)
+  testProperty "SymEither fromEither" (fromEitherProp 0 :: Either Int Int -> Bool),
+  testProperty "SymEither toEither" (toEitherProp :: SymEither Int -> Bool),
+  testProperty "SymEither left" (leftProp :: SymEither Int -> Bool)
   ]
 
 main :: IO ()
