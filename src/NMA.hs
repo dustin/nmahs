@@ -18,6 +18,7 @@ import SymEither
 import Control.Lens (makeLenses, (<>~), (^.), (%%~))
 import Control.Monad (guard)
 import Data.Monoid (Last, getLast)
+import Data.Semigroup (Semigroup)
 import Generics.Deriving.Base (Generic)
 import Generics.Deriving.Monoid (memptydefault, mappenddefault)
 import Data.Semigroup ((<>))
@@ -75,6 +76,8 @@ makeLenses ''Response
 parseResponse :: BS.ByteString -> Either Response Response
 parseResponse b =
   case X.fold open attr end txt close cdata (pure $ Response "" 0 0 0) b of
+instance Semigroup Notification
+
     Left x -> Left (Response ((T.pack . show) x) 0 0 0)
     Right s -> toEither s
 
