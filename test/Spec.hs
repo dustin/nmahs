@@ -91,10 +91,6 @@ leftProp r@(SymEither (True, a)) = left r == SymEither (False, a)
 someSym :: SymEither (Int, Int, Int)
 someSym = undefined
 
--- TODO:  Fix when tasty-quickcheck 0.9.1 is available
-testProperties' :: TestName -> [(String, Property)] -> TestTree
-testProperties' name = testGroup name . map (uncurry testProperty)
-
 tests :: [TestTree]
 tests = [
   testCase "error response parsing" testErrorResponseParsing,
@@ -102,11 +98,11 @@ tests = [
   testCase "success response parsing" testGoodResponseParsing,
   testCase "success response parsing with err" testGoodResponseParsingBadInt,
 
-  testProperties' "Notification monoid" (unbatch $ monoid notification),
+  testProperties "Notification monoid" (unbatch $ monoid notification),
 
-  testProperties' "SymEither functor" (unbatch $ functor someSym),
-  testProperties' "SymEither applicative" (unbatch $ applicative someSym),
-  testProperties' "SymEither monad" (unbatch $ monad someSym),
+  testProperties "SymEither functor" (unbatch $ functor someSym),
+  testProperties "SymEither applicative" (unbatch $ applicative someSym),
+  testProperties "SymEither monad" (unbatch $ monad someSym),
   testProperty "SymEither fromEither" (fromEitherProp 0 :: Either Int Int -> Bool),
   testProperty "SymEither toEither" (toEitherProp :: SymEither Int -> Bool),
   testProperty "SymEither left" (leftProp :: SymEither Int -> Bool)
